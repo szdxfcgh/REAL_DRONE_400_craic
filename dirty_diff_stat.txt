@@ -1,0 +1,19 @@
+ home_shfiles/shfiles/record.sh                     |   3 +-
+ home_shfiles/start_sensor.sh                       |  12 +--
+ src/planner/plan_env/src/grid_map.cpp              |   2 +-
+ src/planner/plan_manage/launch/advanced_param.xml  |  14 +--
+ .../plan_manage/launch/advanced_param_exp.xml      |  92 ++++++++++++++++-
+ .../plan_manage/launch/single_run_in_exp.launch    | 110 ++++++++++++++++-----
+ .../plan_manage/launch/single_run_in_sim.launch    |   9 +-
+ src/planner/plan_manage/src/ego_replan_fsm.cpp     |   3 +-
+ .../mid360_fastlio/src/FAST_LIO/CMakeLists.txt     |   2 +-
+ .../src/FAST_LIO/launch/mapping_mid360.launch      |   2 +-
+ .../mid360_fastlio/src/FAST_LIO/package.xml        |   4 +-
+ .../src/FAST_LIO/src/laserMapping.cpp              |   4 +-
+ .../mid360_fastlio/src/FAST_LIO/src/preprocess.cpp |   4 +-
+ .../mid360_fastlio/src/FAST_LIO/src/preprocess.h   |   6 +-
+ .../livox_ros_driver2/config/MID360_config.json    |   4 +-
+ src/realflight_modules/px4ctrl/CMakeLists.txt      |  27 +++++
+ .../so3_quadrotor_simulator/CMakeLists.txt         |   2 +-
+ src/utils/rviz_plugins/CMakeLists.txt              |   3 +-
+ 18 files changed, 232 insertions(+), 71 deletions(-)
