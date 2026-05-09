@@ -18,3 +18,6 @@ backup_dirty_before_craic_cleanup.patch
 data/
 src/realflight_modules/px4ctrl/data/
 .vscode/
+.catkin_workspace
+src/Livox-SDK2/
+src/graph/
