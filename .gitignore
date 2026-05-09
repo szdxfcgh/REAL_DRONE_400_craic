@@ -13,3 +13,8 @@ __pycache__/
 src/build/
 src/realflight_modules/mid360_fastlio/build/
 src/realflight_modules/mid360_fastlio/devel/
+backup_dirty_before_craic_cleanup.patch
+*.zip
+data/
+src/realflight_modules/px4ctrl/data/
+.vscode/
