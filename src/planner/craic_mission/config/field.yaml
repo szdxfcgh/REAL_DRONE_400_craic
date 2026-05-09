@@ -1,0 +1,56 @@
+# Competition coordinate defaults.
+# Assumption for the first code version:
+# - Origin is the takeoff point center.
+# - +x points along the 9 m field length.
+# - +y points to the left side when looking along +x.
+# Replace these values after the team has measured the actual local frame.
+
+frame_id: "world"
+odom_topic: "/Odom_high_freq"
+goal_topic: "/move_base_simple/goal"
+takeoff_land_topic: "/px4ctrl/takeoff_land"
+drop_cmd_topic: "/craic/drop_cmd"
+qr_result_topic: "/craic/qr_result"
+target_detected_topic: "/craic/target_detected"
+ring_pose_topic: "/craic/ring_pose"
+
+field:
+  min_x: -0.8
+  max_x: 9.2
+  min_y: -3.2
+  max_y: 3.2
+  min_z: 0.0
+  max_z: 2.8
+
+mission:
+  cruise_height: 1.35
+  ring_height: 1.60
+  drop_height: 0.75
+  land_approach_height: 1.20
+  goal_tolerance_xy: 0.35
+  goal_tolerance_z: 0.25
+  goal_timeout: 35.0
+  drop_settle_time: 1.5
+  target_confirm_timeout: 4.0
+  target_min_confidence: 0.50
+  takeoff_wait_timeout: 20.0
+  landing_wait_time: 8.0
+  obstacle_laps: 1
+  obstacle_radius: 1.05
+  obstacle_segments_per_lap: 8
+  auto_start: false
+  dry_run: true
+  mock_qr_text: "man,apple,left"
+
+points:
+  takeoff: [0.0, 0.0, 0.0]
+  qr_scan: [0.5, 0.0, 1.35]
+  obstacle_center: [3.0, 0.0, 1.35]
+  image_target_a: [5.3, 1.6, 0.75]
+  image_target_b: [5.3, -1.6, 0.75]
+  special_target: [6.4, 0.0, 0.75]
+  ring_pre: [6.2, 0.0, 1.60]
+  ring_center: [7.5, 0.0, 1.60]
+  ring_post: [8.6, 0.0, 1.60]
+  landing_left: [8.2, 1.4, 0.0]
+  landing_right: [8.2, -1.4, 0.0]

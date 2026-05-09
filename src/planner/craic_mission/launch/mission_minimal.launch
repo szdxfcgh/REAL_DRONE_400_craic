@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="craic_mission" type="mission_fsm_minimal.py" name="craic_mission_minimal" output="screen">
+    <rosparam command="load" file="$(find craic_mission)/config/mission_minimal.yaml"/>
+  </node>
+</launch>

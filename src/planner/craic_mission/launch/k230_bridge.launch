@@ -1,0 +1,19 @@
+<launch>
+  <arg name="mode" default="udp"/>
+  <arg name="udp_host" default="0.0.0.0"/>
+  <arg name="udp_port" default="9000"/>
+  <arg name="serial_port" default="/dev/ttyUSB0"/>
+  <arg name="serial_baud" default="115200"/>
+  <arg name="serial_timeout" default="0.2"/>
+  <arg name="reconnect_interval" default="2.0"/>
+
+  <node pkg="craic_mission" type="k230_bridge.py" name="k230_bridge" output="screen">
+    <param name="mode" value="$(arg mode)"/>
+    <param name="udp_host" value="$(arg udp_host)"/>
+    <param name="udp_port" value="$(arg udp_port)" type="int"/>
+    <param name="serial_port" value="$(arg serial_port)"/>
+    <param name="serial_baud" value="$(arg serial_baud)" type="int"/>
+    <param name="serial_timeout" value="$(arg serial_timeout)" type="double"/>
+    <param name="reconnect_interval" value="$(arg reconnect_interval)" type="double"/>
+  </node>
+</launch>

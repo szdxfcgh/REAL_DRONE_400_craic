@@ -1,0 +1,37 @@
+frame_id: "world"
+
+topics:
+  odom: "/Odom_high_freq"
+  goal: "/move_base_simple/goal"
+  takeoff_land: "/px4ctrl/takeoff_land"
+
+mission:
+  auto_start: false
+  mission_timeout_sec: 540.0
+  loop_hz: 20.0
+  command_republish_sec: 1.0
+  goal_republish_sec: 1.0
+
+takeoff:
+  target_height: 0.5
+  timeout_sec: 25.0
+  settle_sec: 2.0
+
+goal:
+  test_point: [0.5, 0.0, 0.6]
+  tolerance_xy: 0.25
+  tolerance_z: 0.20
+  timeout_sec: 35.0
+
+land:
+  wait_sec: 8.0
+
+safety:
+  odom_timeout_sec: 0.8
+  geofence:
+    min_x: -0.5
+    max_x: 9.5
+    min_y: -3.5
+    max_y: 3.5
+    min_z: 0.0
+    max_z: 2.2

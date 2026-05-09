@@ -1,0 +1,30 @@
+<launch>
+  <arg name="auto_start" default="false"/>
+  <arg name="dry_run" default="true"/>
+  <arg name="mock_qr_text" default="man,apple,left"/>
+  <arg name="enable_safety_auto_land" default="false"/>
+  <arg name="start_fake_odom" default="false"/>
+
+  <group if="$(arg start_fake_odom)">
+    <node pkg="craic_mission" type="fake_odom.py" name="craic_fake_odom" output="screen">
+      <rosparam command="load" file="$(find craic_mission)/config/field.yaml"/>
+    </node>
+  </group>
+
+  <node pkg="craic_mission" type="mission_fsm.py" name="craic_mission_fsm" output="screen">
+    <rosparam command="load" file="$(find craic_mission)/config/field.yaml"/>
+    <param name="mission/auto_start" value="$(arg auto_start)" type="bool"/>
+    <param name="mission/dry_run" value="$(arg dry_run)" type="bool"/>
+    <param name="mission/mock_qr_text" value="$(arg mock_qr_text)"/>
+  </node>
+
+  <node pkg="craic_mission" type="drop_controller_mock.py" name="drop_controller_mock" output="screen">
+    <param name="drop_cmd_topic" value="/craic/drop_cmd"/>
+    <param name="drop_done_topic" value="/craic/drop_done"/>
+  </node>
+
+  <node pkg="craic_mission" type="safety_monitor.py" name="craic_safety_monitor" output="screen">
+    <rosparam command="load" file="$(find craic_mission)/config/field.yaml"/>
+    <param name="enable_auto_land" value="$(arg enable_safety_auto_land)" type="bool"/>
+  </node>
+</launch>

@@ -1,0 +1,26 @@
+<launch>
+  <arg name="serial_port" default="/dev/ttyACM0"/>
+  <arg name="baud_rate" default="115200"/>
+  <arg name="raw_topic" default="/craic/k230/raw"/>
+  <arg name="qr_result_topic" default="/craic/qr_result"/>
+  <arg name="target_detected_topic" default="/craic/target_detected"/>
+  <arg name="serial_timeout" default="1.0"/>
+  <arg name="reconnect_interval" default="2.0"/>
+  <arg name="msg_prefix" default="ROS_MSG:"/>
+  <arg name="loop_hz" default="50.0"/>
+
+  <node pkg="craic_mission"
+        type="k230_serial_node.py"
+        name="k230_usb_serial_node"
+        output="screen">
+    <param name="serial_port" value="$(arg serial_port)"/>
+    <param name="baud_rate" value="$(arg baud_rate)" type="int"/>
+    <param name="raw_topic" value="$(arg raw_topic)"/>
+    <param name="qr_result_topic" value="$(arg qr_result_topic)"/>
+    <param name="target_detected_topic" value="$(arg target_detected_topic)"/>
+    <param name="serial_timeout" value="$(arg serial_timeout)" type="double"/>
+    <param name="reconnect_interval" value="$(arg reconnect_interval)" type="double"/>
+    <param name="msg_prefix" value="$(arg msg_prefix)"/>
+    <param name="loop_hz" value="$(arg loop_hz)" type="double"/>
+  </node>
+</launch>

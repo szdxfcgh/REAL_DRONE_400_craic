@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>craic_mission</name>
+  <version>0.1.0</version>
+  <description>Mission-level nodes for the CRAIC micro UAV challenge.</description>
+
+  <maintainer email="todo@example.com">REAL Drone Team</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>quadrotor_msgs</depend>
+  <exec_depend>python3-serial</exec_depend>
+
+  <export/>
+</package>
