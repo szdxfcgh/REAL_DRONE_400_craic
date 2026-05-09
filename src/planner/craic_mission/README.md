@@ -58,6 +58,15 @@ rostopic echo /craic/special_target
 rostopic echo /craic/landing_marker
 ```
 
+Fake K230 for dry-run tests without K230 hardware:
+
+```bash
+roslaunch craic_mission fake_k230.launch
+rostopic echo /craic/qr_result
+rostopic echo /craic/target_detected
+rostopic echo /craic/ring_pose
+```
+
 Full dry-run stack with K230 serial enabled:
 
 ```bash

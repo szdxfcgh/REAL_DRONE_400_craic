@@ -1,0 +1,21 @@
+<launch>
+  <arg name="qr_text" default="man,apple,left"/>
+  <arg name="target_a" default="man"/>
+  <arg name="target_b" default="apple"/>
+  <arg name="landing_side" default="left"/>
+  <arg name="ring_x" default="7.5"/>
+  <arg name="ring_y" default="0.0"/>
+  <arg name="ring_z" default="1.6"/>
+  <arg name="publish_hz" default="2.0"/>
+
+  <node pkg="craic_mission" type="fake_k230_publisher.py" name="fake_k230_publisher" output="screen">
+    <param name="qr_text" value="$(arg qr_text)"/>
+    <param name="target_a" value="$(arg target_a)"/>
+    <param name="target_b" value="$(arg target_b)"/>
+    <param name="landing_side" value="$(arg landing_side)"/>
+    <param name="ring_x" value="$(arg ring_x)" type="double"/>
+    <param name="ring_y" value="$(arg ring_y)" type="double"/>
+    <param name="ring_z" value="$(arg ring_z)" type="double"/>
+    <param name="publish_hz" value="$(arg publish_hz)" type="double"/>
+  </node>
+</launch>
