@@ -1,0 +1,15 @@
+build/
+devel/
+logs/
+.catkin_tools/
+.vscode/ipch/
+*.bag
+*.mp4
+*.avi
+*.pyc
+__pycache__/
+.DS_Store
+*.log
+src/build/
+src/realflight_modules/mid360_fastlio/build/
+src/realflight_modules/mid360_fastlio/devel/
