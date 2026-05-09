@@ -20,11 +20,15 @@ class K230Bridge:
         self.qr_result_topic = rospy.get_param("~qr_result_topic", "/craic/qr_result")
         self.target_detected_topic = rospy.get_param("~target_detected_topic", "/craic/target_detected")
         self.ring_pose_topic = rospy.get_param("~ring_pose_topic", "/craic/ring_pose")
+        self.special_target_topic = rospy.get_param("~special_target_topic", "/craic/special_target")
+        self.landing_marker_topic = rospy.get_param("~landing_marker_topic", "/craic/landing_marker")
         self.raw_topic = rospy.get_param("~raw_topic", "/craic/k230/raw")
 
         self.qr_pub = rospy.Publisher(self.qr_result_topic, String, queue_size=1)
         self.target_pub = rospy.Publisher(self.target_detected_topic, String, queue_size=10)
         self.ring_pub = rospy.Publisher(self.ring_pose_topic, PoseStamped, queue_size=1)
+        self.special_pub = rospy.Publisher(self.special_target_topic, String, queue_size=10)
+        self.landing_pub = rospy.Publisher(self.landing_marker_topic, String, queue_size=10)
         self.raw_pub = rospy.Publisher(self.raw_topic, String, queue_size=10)
 
     def run(self) -> None:
@@ -106,7 +110,7 @@ class K230Bridge:
         elif upper.startswith("TARGET:"):
             self._publish_target(text[7:])
         elif upper.startswith("RING:"):
-            self._publish_ring(text[5:])
+            self._publish_ring(text[5:], require_confidence=False)
         else:
             rospy.logwarn("[k230 bridge] unknown line: %s", line)
 
@@ -123,7 +127,11 @@ class K230Bridge:
         elif msg_type == "target":
             self._publish_target(body)
         elif msg_type == "ring":
-            self._publish_ring(body)
+            self._publish_ring(body, require_confidence=True)
+        elif msg_type == "special":
+            self._publish_special(body)
+        elif msg_type == "landing":
+            self._publish_landing(body)
         else:
             rospy.logwarn("[k230 bridge] unknown ROS_MSG type '%s' in line: %s", msg_type, raw_line)
 
@@ -159,9 +167,10 @@ class K230Bridge:
         self.target_pub.publish(String(data=normalized))
         rospy.logwarn("[k230 bridge] TARGET %s", normalized)
 
-    def _publish_ring(self, payload: str) -> None:
+    def _publish_ring(self, payload: str, require_confidence: bool = False) -> None:
         values = self._parse_floats(payload.split(","))
-        if values is None or len(values) < 3:
+        min_len = 4 if require_confidence else 3
+        if values is None or len(values) < min_len:
             rospy.logwarn("[k230 bridge] ignore invalid RING payload: %s", payload)
             return
 
@@ -173,7 +182,40 @@ class K230Bridge:
         msg.pose.position.z = values[2]
         msg.pose.orientation.w = 1.0
         self.ring_pub.publish(msg)
-        rospy.logwarn("[k230 bridge] RING %.2f %.2f %.2f", values[0], values[1], values[2])
+        if len(values) >= 4:
+            rospy.logwarn("[k230 bridge] RING %.2f %.2f %.2f confidence=%.2f", values[0], values[1], values[2], values[3])
+        else:
+            rospy.logwarn("[k230 bridge] RING %.2f %.2f %.2f", values[0], values[1], values[2])
+
+    def _publish_special(self, payload: str) -> None:
+        values = self._parse_floats(payload.split(","))
+        if values is None or len(values) < 3:
+            rospy.logwarn("[k230 bridge] ignore invalid SPECIAL payload: %s", payload)
+            return
+
+        normalized = "%.3f,%.1f,%.1f" % (values[0], values[1], values[2])
+        self.special_pub.publish(String(data=normalized))
+        rospy.logwarn("[k230 bridge] SPECIAL %s", normalized)
+
+    def _publish_landing(self, payload: str) -> None:
+        parts = [part.strip() for part in payload.split(",")]
+        if len(parts) < 4:
+            rospy.logwarn("[k230 bridge] ignore invalid LANDING payload: %s", payload)
+            return
+
+        side = parts[0].lower()
+        if side not in ("left", "right"):
+            rospy.logwarn("[k230 bridge] ignore invalid LANDING payload: %s", payload)
+            return
+
+        values = self._parse_floats(parts[1:4])
+        if values is None:
+            rospy.logwarn("[k230 bridge] ignore invalid LANDING payload: %s", payload)
+            return
+
+        normalized = "%s,%.3f,%.3f,%.3f" % (side, values[0], values[1], values[2])
+        self.landing_pub.publish(String(data=normalized))
+        rospy.logwarn("[k230 bridge] LANDING %s", normalized)
 
     @staticmethod
     def _parse_floats(items: Iterable[str]) -> Optional[list]:

@@ -21,3 +21,4 @@ src/realflight_modules/px4ctrl/data/
 .catkin_workspace
 src/Livox-SDK2/
 src/graph/
+k230_files.txt

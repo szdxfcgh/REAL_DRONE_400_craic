@@ -11,6 +11,8 @@ It currently treats K230 vision and the physical drop mechanism as replaceable R
 - QR result: `/craic/qr_result`, `std_msgs/String`, format `class_a,class_b,left` or `class_a,class_b,right`.
 - Target detection: `/craic/target_detected`, `std_msgs/String`, format `class,confidence,center_x,center_y`.
 - Ring center override: `/craic/ring_pose`, `geometry_msgs/PoseStamped`.
+- Special target marker: `/craic/special_target`, `std_msgs/String`, format `confidence,center_x,center_y`.
+- Landing marker: `/craic/landing_marker`, `std_msgs/String`, format `left_or_right,dx,dy,confidence`.
 - Drop command: `/craic/drop_cmd`, `std_msgs/Int32`, values `1`, `2`, `3`.
 
 ## K230 Serial
@@ -19,18 +21,41 @@ The preferred K230 integration is the in-package serial node `k230_serial_node.p
 It expects one serial line per recognition result:
 
 ```text
-ROS_MSG:qr,man,apple,left
-ROS_MSG:target,man,0.87,320,240
-ROS_MSG:target,apple,0.82,300,250
-ROS_MSG:ring,7.50,0.00,1.60
+ROS_MSG:qr,<class_a>,<class_b>,<left|right>
+ROS_MSG:target,<label>,<confidence>,<cx>,<cy>
+ROS_MSG:ring,<x>,<y>,<z>,<confidence>
+ROS_MSG:special,<confidence>,<cx>,<cy>
+ROS_MSG:landing,<side>,<dx>,<dy>,<confidence>
 ```
 
 The copied K230-side reference script is `scripts/k230_device_main.py`. It is meant to run on the K230/CanMV side and print the protocol lines above to the serial console.
+
+K230 to ROS topic mapping:
+
+```text
+ROS_MSG:qr,...       -> /craic/qr_result       std_msgs/String
+ROS_MSG:target,...   -> /craic/target_detected std_msgs/String
+ROS_MSG:ring,...     -> /craic/ring_pose       geometry_msgs/PoseStamped
+ROS_MSG:special,...  -> /craic/special_target  std_msgs/String
+ROS_MSG:landing,...  -> /craic/landing_marker  std_msgs/String
+all valid/invalid lines -> /craic/k230/raw     std_msgs/String
+```
 
 Serial mode:
 
 ```bash
 roslaunch craic_mission k230_serial_node.launch serial_port:=/dev/ttyACM0 baud_rate:=115200
+```
+
+K230 topic checks:
+
+```bash
+rostopic echo /craic/k230/raw
+rostopic echo /craic/qr_result
+rostopic echo /craic/target_detected
+rostopic echo /craic/ring_pose
+rostopic echo /craic/special_target
+rostopic echo /craic/landing_marker
 ```
 
 Full dry-run stack with K230 serial enabled:
