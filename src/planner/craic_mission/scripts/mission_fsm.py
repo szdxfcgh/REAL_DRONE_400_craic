@@ -42,9 +42,20 @@ class CraicMissionFSM:
         self.dry_run = bool(rospy.get_param("~mission/dry_run", True))
         self.auto_start = bool(rospy.get_param("~mission/auto_start", False))
         self.mock_qr_text = str(rospy.get_param("~mission/mock_qr_text", "man,apple,left"))
+        self.mission_timeout_sec = float(rospy.get_param("~mission/mission_timeout_sec", 540.0))
+        self.odom_timeout_sec = float(rospy.get_param("~safety/odom_timeout_sec", 0.8))
+        self.min_x = float(rospy.get_param("~safety/geofence/min_x", -0.5))
+        self.max_x = float(rospy.get_param("~safety/geofence/max_x", 9.5))
+        self.min_y = float(rospy.get_param("~safety/geofence/min_y", -3.5))
+        self.max_y = float(rospy.get_param("~safety/geofence/max_y", 3.5))
+        self.min_z = float(rospy.get_param("~safety/geofence/min_z", 0.0))
+        self.max_z = float(rospy.get_param("~safety/geofence/max_z", 2.2))
 
         self.points = self._load_points()
         self.current_odom: Optional[Odometry] = None
+        self.last_odom_rx: Optional[rospy.Time] = None
+        self.mission_start: Optional[rospy.Time] = None
+        self.safety_reason: Optional[str] = None
         self.latest_qr: Optional[str] = None
         self.latest_target: Optional[Tuple[str, float, float, float, rospy.Time]] = None
         self.latest_ring_pose: Optional[PoseStamped] = None
@@ -55,6 +66,7 @@ class CraicMissionFSM:
         self.takeoff_land_pub = rospy.Publisher(self.takeoff_land_topic, TakeoffLand, queue_size=1)
         self.drop_pub = rospy.Publisher(self.drop_cmd_topic, Int32, queue_size=1)
         self.state_pub = rospy.Publisher("~state", String, queue_size=1, latch=True)
+        self.safety_pub = rospy.Publisher("~safety_reason", String, queue_size=1, latch=True)
 
         rospy.Subscriber(self.odom_topic, Odometry, self._odom_cb, queue_size=1)
         rospy.Subscriber(self.qr_result_topic, String, self._qr_cb, queue_size=1)
@@ -86,6 +98,7 @@ class CraicMissionFSM:
 
     def _odom_cb(self, msg: Odometry) -> None:
         self.current_odom = msg
+        self.last_odom_rx = rospy.Time.now()
 
     def _qr_cb(self, msg: String) -> None:
         self.latest_qr = msg.data.strip()
@@ -115,6 +128,50 @@ class CraicMissionFSM:
         msg = TakeoffLand()
         msg.takeoff_land_cmd = cmd
         self.takeoff_land_pub.publish(msg)
+
+    def _trip_safety(self, reason: str) -> None:
+        if self.safety_reason is None:
+            self.safety_reason = reason
+            rospy.logerr("[CRAIC mission] safety trigger: %s", reason)
+            self.safety_pub.publish(String(data=reason))
+
+    def _check_safety(self) -> bool:
+        if self.safety_reason is not None:
+            return False
+        if self.mission_start is None:
+            return True
+
+        now = rospy.Time.now()
+        elapsed = (now - self.mission_start).to_sec()
+        if elapsed > self.mission_timeout_sec:
+            self._trip_safety("MISSION_TIMEOUT %.1fs" % elapsed)
+            return False
+
+        if self.last_odom_rx is None:
+            self._trip_safety("ODOM_TIMEOUT no_odom")
+            return False
+
+        odom_age = (now - self.last_odom_rx).to_sec()
+        if odom_age > self.odom_timeout_sec:
+            self._trip_safety("ODOM_TIMEOUT %.2fs" % odom_age)
+            return False
+
+        current = self._current_position()
+        if current is None:
+            return True
+
+        x, y, z = current
+        if x < self.min_x or x > self.max_x:
+            self._trip_safety("GEOFENCE_X %.2f" % x)
+            return False
+        if y < self.min_y or y > self.max_y:
+            self._trip_safety("GEOFENCE_Y %.2f" % y)
+            return False
+        if z < self.min_z or z > self.max_z:
+            self._trip_safety("GEOFENCE_Z %.2f" % z)
+            return False
+
+        return True
 
     def _publish_goal(self, point: Point) -> None:
         msg = PoseStamped()
@@ -161,6 +218,8 @@ class CraicMissionFSM:
         rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
+            if not self._check_safety():
+                return False
             if last_pub == rospy.Time(0) or (rospy.Time.now() - last_pub).to_sec() > 2.0:
                 self._publish_goal(point)
                 last_pub = rospy.Time.now()
@@ -214,11 +273,19 @@ class CraicMissionFSM:
             waypoints.append((x, y, self.cruise_height))
         return waypoints
 
-    def _drop(self, drop_id: int, label: str) -> None:
+    def _drop(self, drop_id: int, label: str) -> bool:
+        if not self._check_safety():
+            return False
         self._set_state("DROP_" + label)
         rospy.logwarn("[CRAIC mission] drop %d at %s", drop_id, label)
         self.drop_pub.publish(Int32(data=drop_id))
-        rospy.sleep(self.drop_settle_time)
+        start = rospy.Time.now()
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown() and (rospy.Time.now() - start).to_sec() < self.drop_settle_time:
+            if not self._check_safety():
+                return False
+            rate.sleep()
+        return not rospy.is_shutdown()
 
     def _wait_for_target_confirm(self, expected_class: str, label: str) -> bool:
         expected = expected_class.strip().lower()
@@ -231,6 +298,8 @@ class CraicMissionFSM:
         rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
+            if not self._check_safety():
+                return False
             elapsed = (rospy.Time.now() - start).to_sec()
             if elapsed > self.target_confirm_timeout:
                 break
@@ -283,8 +352,23 @@ class CraicMissionFSM:
             return False
         if expected_class is not None:
             self._wait_for_target_confirm(expected_class, label)
-        self._drop(drop_id, label)
+            if self.safety_reason is not None:
+                return False
+        if not self._drop(drop_id, label):
+            return False
         return self._go_to(cruise, label + "_CLIMB")
+
+    def _run_land(self, final_state: Optional[str] = "DONE") -> None:
+        self._set_state("LAND")
+        self._publish_takeoff_land(2)
+        start = rospy.Time.now()
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown() and (rospy.Time.now() - start).to_sec() < self.landing_wait_time:
+            if self.safety_reason is None:
+                self._check_safety()
+            rate.sleep()
+        if final_state is not None and self.safety_reason is None:
+            self._set_state(final_state)
 
     def run(self) -> None:
         if not self._wait_for_odom():
@@ -301,48 +385,62 @@ class CraicMissionFSM:
         if rospy.is_shutdown():
             return
 
+        self.mission_start = rospy.Time.now()
+        if not self._check_safety():
+            self._run_land(final_state=None)
+            return
+
         self._set_state("TAKEOFF")
         self._publish_takeoff_land(1)
         takeoff_target = (self.points["takeoff"][0], self.points["takeoff"][1], self.cruise_height)
-        self._go_to(takeoff_target, "TAKEOFF_CLIMB", timeout=self.takeoff_wait_timeout)
+        if not self._go_to(takeoff_target, "TAKEOFF_CLIMB", timeout=self.takeoff_wait_timeout):
+            self._run_land(final_state=None)
+            return
 
-        self._go_to(self.points["qr_scan"], "QR_SCAN")
+        if not self._go_to(self.points["qr_scan"], "QR_SCAN"):
+            self._run_land(final_state=None)
+            return
         class_a, class_b, landing_side = self._parse_qr()
         rospy.logwarn("[CRAIC mission] QR result: class_a=%s class_b=%s landing=%s", class_a, class_b, landing_side)
 
         for index, point in enumerate(self._orbit_waypoints()):
             if not self._go_to(point, "ORBIT_%02d" % index):
-                self._publish_takeoff_land(2)
+                self._run_land(final_state=None)
                 return
 
         if not self._drop_at("image_target_a", 1, "IMAGE_TARGET_A_" + class_a, expected_class=class_a):
-            self._publish_takeoff_land(2)
+            self._run_land(final_state=None)
             return
         if not self._drop_at("image_target_b", 2, "IMAGE_TARGET_B_" + class_b, expected_class=class_b):
-            self._publish_takeoff_land(2)
+            self._run_land(final_state=None)
             return
         if not self._drop_at("special_target", 3, "SPECIAL_TARGET"):
-            self._publish_takeoff_land(2)
+            self._run_land(final_state=None)
             return
 
-        self._go_to(self.points["ring_pre"], "RING_PRE")
+        if not self._go_to(self.points["ring_pre"], "RING_PRE"):
+            self._run_land(final_state=None)
+            return
         ring_center = self.points["ring_center"]
         if self.latest_ring_pose is not None:
             p = self.latest_ring_pose.pose.position
             ring_center = (p.x, p.y, p.z if p.z > 0.2 else self.ring_height)
             rospy.logwarn("[CRAIC mission] using detected ring center: %.2f %.2f %.2f", ring_center[0], ring_center[1], ring_center[2])
-        self._go_to(ring_center, "RING_CENTER")
-        self._go_to(self.points["ring_post"], "RING_POST")
+        if not self._go_to(ring_center, "RING_CENTER"):
+            self._run_land(final_state=None)
+            return
+        if not self._go_to(self.points["ring_post"], "RING_POST"):
+            self._run_land(final_state=None)
+            return
 
         landing_key = "landing_left" if landing_side == "left" else "landing_right"
         landing = self.points[landing_key]
         approach = (landing[0], landing[1], self.land_approach_height)
-        self._go_to(approach, "LAND_APPROACH_" + landing_side.upper())
+        if not self._go_to(approach, "LAND_APPROACH_" + landing_side.upper()):
+            self._run_land(final_state=None)
+            return
 
-        self._set_state("LAND")
-        self._publish_takeoff_land(2)
-        rospy.sleep(self.landing_wait_time)
-        self._set_state("DONE")
+        self._run_land(final_state="DONE")
 
 
 if __name__ == "__main__":
