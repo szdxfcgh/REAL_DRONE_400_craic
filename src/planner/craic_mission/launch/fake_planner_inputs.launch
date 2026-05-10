@@ -1,0 +1,13 @@
+<launch>
+  <arg name="frame_id" default="world"/>
+  <arg name="publish_hz" default="10.0"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="extrinsic_topic" default="/vins_fusion/extrinsic"/>
+
+  <node pkg="craic_mission" type="fake_planner_inputs.py" name="fake_planner_inputs" output="screen">
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="publish_hz" value="$(arg publish_hz)" type="double"/>
+    <param name="cloud_topic" value="$(arg cloud_topic)"/>
+    <param name="extrinsic_topic" value="$(arg extrinsic_topic)"/>
+  </node>
+</launch>

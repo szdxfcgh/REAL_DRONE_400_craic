@@ -113,6 +113,19 @@ Right-side landing mock:
 roslaunch craic_mission competition_all.launch dry_run:=true auto_start:=false mock_qr_text:=man,apple,right
 ```
 
+Planner dry-run input checks:
+
+```bash
+roslaunch craic_mission fake_planner_inputs.launch
+rostopic info /cloud_registered
+rostopic hz /cloud_registered
+rostopic info /vins_fusion/extrinsic
+rostopic hz /vins_fusion/extrinsic
+roslaunch craic_mission competition_all.launch dry_run:=true auto_start:=true start_fake_odom:=true start_planner:=true
+rostopic echo /drone_0_planning/bspline
+rostopic echo /position_cmd
+```
+
 ## Flight Run
 
 Only use this after props-off bench tests and RC failsafe checks:

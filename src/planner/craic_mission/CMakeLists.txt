@@ -17,6 +17,7 @@ catkin_install_python(PROGRAMS
   scripts/drop_controller_mock.py
   scripts/fake_k230_publisher.py
   scripts/fake_odom.py
+  scripts/fake_planner_inputs.py
   scripts/k230_bridge.py
   scripts/k230_serial_node.py
   scripts/safety_monitor.py
