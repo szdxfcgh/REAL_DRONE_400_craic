@@ -6,11 +6,12 @@
   <arg name="start_safety_monitor" default="true"/>
   <arg name="enable_safety_auto_land" default="false"/>
 
-  <include file="$(find craic_mission)/launch/competition_all.launch" pass_all_args="true">
+  <include file="$(find craic_mission)/launch/competition_all.launch">
     <arg name="dry_run" value="$(arg dry_run)"/>
     <arg name="auto_start" value="$(arg auto_start)"/>
     <arg name="start_fake_odom" value="$(arg start_fake_odom)"/>
     <arg name="start_planner" value="$(arg start_planner)"/>
+    <arg name="start_safety_monitor" value="$(arg start_safety_monitor)"/>
     <arg name="enable_safety_auto_land" value="$(arg enable_safety_auto_land)"/>
   </include>
 </launch>
