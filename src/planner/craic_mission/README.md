@@ -157,6 +157,27 @@ rostopic echo /position_cmd
 rostopic pub /craic_mission_fsm/start std_msgs/Empty "{}" -1
 ```
 
+## Real Hardware Integration
+
+Use `competition_real.launch` for props-off bench integration when replacing fake odom, fake K230, and fake planner inputs with real hardware data. It still defaults to `dry_run:=true`, does not auto-start the mission, and does not launch `fake_k230.launch` or `fake_planner_inputs.launch`.
+
+Before running it, confirm the real inputs are alive:
+
+```bash
+rostopic hz /Odom_high_freq
+rostopic hz /cloud_registered
+rostopic hz /camera/depth/image_rect_raw
+rostopic echo /craic/qr_result
+```
+
+Start the guarded real-hardware entry:
+
+```bash
+roslaunch craic_mission competition_real.launch
+```
+
+Do not set `dry_run:=false` before props-off bench tests are complete.
+
 ## Flight Run
 
 Only use this after props-off bench tests and RC failsafe checks:
