@@ -21,6 +21,7 @@ catkin_install_python(PROGRAMS
   scripts/fake_planner_inputs.py
   scripts/k230_bridge.py
   scripts/k230_serial_node.py
+  scripts/k230_status_monitor.py
   scripts/safety_monitor.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

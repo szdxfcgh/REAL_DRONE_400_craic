@@ -67,6 +67,14 @@ rostopic echo /craic/target_detected
 rostopic echo /craic/ring_pose
 ```
 
+K230 input health monitor:
+
+```bash
+roslaunch craic_mission fake_k230.launch
+roslaunch craic_mission k230_status_monitor.launch
+rostopic echo /craic/k230/status
+```
+
 Full dry-run stack with K230 serial enabled:
 
 ```bash

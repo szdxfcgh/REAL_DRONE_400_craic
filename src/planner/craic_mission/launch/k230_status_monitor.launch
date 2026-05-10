@@ -1,0 +1,15 @@
+<launch>
+  <arg name="raw_timeout_sec" default="2.0"/>
+  <arg name="qr_timeout_sec" default="5.0"/>
+  <arg name="target_timeout_sec" default="3.0"/>
+  <arg name="ring_timeout_sec" default="5.0"/>
+  <arg name="publish_hz" default="2.0"/>
+
+  <node pkg="craic_mission" type="k230_status_monitor.py" name="k230_status_monitor" output="screen">
+    <param name="raw_timeout_sec" value="$(arg raw_timeout_sec)" type="double"/>
+    <param name="qr_timeout_sec" value="$(arg qr_timeout_sec)" type="double"/>
+    <param name="target_timeout_sec" value="$(arg target_timeout_sec)" type="double"/>
+    <param name="ring_timeout_sec" value="$(arg ring_timeout_sec)" type="double"/>
+    <param name="publish_hz" value="$(arg publish_hz)" type="double"/>
+  </node>
+</launch>
