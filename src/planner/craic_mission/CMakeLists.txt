@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package()
 
 catkin_install_python(PROGRAMS
+  scripts/check_craic_topics.py
   scripts/mission_fsm.py
   scripts/mission_fsm_minimal.py
   scripts/drop_controller_mock.py

@@ -126,6 +126,16 @@ rostopic echo /drone_0_planning/bspline
 rostopic echo /position_cmd
 ```
 
+Full dry-run integration launch and topic health check:
+
+```bash
+roslaunch craic_mission competition_dryrun_full.launch
+rosrun craic_mission check_craic_topics.py
+rostopic echo /drone_0_planning/bspline
+rostopic echo /position_cmd
+rostopic pub /craic_mission_fsm/start std_msgs/Empty "{}" -1
+```
+
 ## Flight Run
 
 Only use this after props-off bench tests and RC failsafe checks:

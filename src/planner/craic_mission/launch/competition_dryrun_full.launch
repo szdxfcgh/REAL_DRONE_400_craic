@@ -1,0 +1,23 @@
+<launch>
+  <arg name="dry_run" default="true"/>
+  <arg name="auto_start" default="false"/>
+  <arg name="start_fake_odom" default="true"/>
+  <arg name="start_planner" default="true"/>
+  <arg name="use_fake_k230" default="true"/>
+  <arg name="use_fake_planner_inputs" default="true"/>
+
+  <group if="$(arg use_fake_k230)">
+    <include file="$(find craic_mission)/launch/fake_k230.launch"/>
+  </group>
+
+  <group if="$(arg use_fake_planner_inputs)">
+    <include file="$(find craic_mission)/launch/fake_planner_inputs.launch"/>
+  </group>
+
+  <include file="$(find craic_mission)/launch/competition_all.launch">
+    <arg name="dry_run" value="$(arg dry_run)"/>
+    <arg name="auto_start" value="$(arg auto_start)"/>
+    <arg name="start_fake_odom" value="$(arg start_fake_odom)"/>
+    <arg name="start_planner" value="$(arg start_planner)"/>
+  </include>
+</launch>
