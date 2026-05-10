@@ -33,6 +33,15 @@ def _normalize_target(items):
     return "%s,%.3f,%.1f,%.1f" % (label, confidence, center_x, center_y)
 
 
+def _normalize_find(items):
+    if len(items) != 2:
+        return None
+    side = items[1].strip().lower()
+    if side not in ("left", "right"):
+        return None
+    return side
+
+
 def _parse_ring(items):
     if len(items) != 5:
         return None
@@ -173,6 +182,13 @@ def main():
                 else:
                     target_pub.publish(String(data=normalized))
                     rospy.loginfo("Published target: %s", normalized)
+            elif msg_type == "find":
+                normalized = _normalize_find(items)
+                if normalized is None:
+                    rospy.logwarn("invalid find payload: %s", line)
+                else:
+                    landing_pub.publish(String(data=normalized))
+                    rospy.loginfo("Published find marker: %s", normalized)
             elif msg_type == "ring":
                 ring = _parse_ring(items)
                 if ring is None:
