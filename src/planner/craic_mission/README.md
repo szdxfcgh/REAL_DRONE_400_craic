@@ -75,6 +75,19 @@ roslaunch craic_mission competition_all.launch dry_run:=true auto_start:=false s
 
 `k230_bridge.py` is still kept for UDP tests and accepts legacy `QR:...`, `TARGET:...`, and `RING:...` lines, but the serial node above matches the current K230 `ROS_MSG:...` protocol directly.
 
+## Onboard Workspace Prep
+
+After copying or unzipping the workspace onto the onboard Ubuntu/Noetic computer, run the fixed preparation flow from the workspace root:
+
+```bash
+cd ~/craic_dev_for_onboard
+bash scripts/prepare_onboard_workspace.sh
+source devel/setup.bash
+roslaunch craic_mission competition_dryrun_full.launch
+```
+
+The preparation script repairs the catkin workspace, temporarily ignores unavailable dry-run sensor packages, cleans `build` and `devel`, and runs `catkin_make`.
+
 ## Safe Dry Run
 
 Build first:
