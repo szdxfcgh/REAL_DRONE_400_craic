@@ -196,6 +196,22 @@ rostopic echo /position_cmd
 rostopic pub /craic_mission_fsm/start std_msgs/Empty "{}" -1
 ```
 
+`competition_dryrun_full.launch` starts the fake drop controller by default, so pure software dry-runs can exercise `/craic/drop_cmd` and `/craic/drop_status` together. The fake controller publishes `ACK:DROP:1`, `ACK:DROP:2`, or `ACK:DROP:3` after `fake_drop_ack_delay` seconds.
+
+Dry-run drop ACK checks:
+
+```bash
+roslaunch craic_mission competition_dryrun_full.launch fake_drop_ack_delay:=0.3
+rostopic echo /craic/drop_status
+rostopic echo /craic/drop_cmd
+```
+
+Disable the fake drop controller when connecting the real STM32 bridge:
+
+```bash
+roslaunch craic_mission competition_dryrun_full.launch start_fake_drop_controller:=false
+```
+
 ## Real Hardware Integration
 
 Use `competition_real.launch` for props-off bench integration when replacing fake odom, fake K230, and fake planner inputs with real hardware data. It still defaults to `dry_run:=true`, does not auto-start the mission, and does not launch `fake_k230.launch` or `fake_planner_inputs.launch`.
