@@ -58,13 +58,16 @@ def _parse_ring(items):
 def _normalize_special(items):
     if len(items) != 4:
         return None
+    confidence = items[1].strip()
+    center_x = items[2].strip()
+    center_y = items[3].strip()
     try:
-        confidence = float(items[1])
-        center_x = float(items[2])
-        center_y = float(items[3])
+        float(confidence)
+        float(center_x)
+        float(center_y)
     except ValueError:
         return None
-    return "%.3f,%.1f,%.1f" % (confidence, center_x, center_y)
+    return "%s,%s,%s" % (confidence, center_x, center_y)
 
 
 def _normalize_landing(items):
@@ -205,7 +208,10 @@ def main():
             elif msg_type == "special":
                 normalized = _normalize_special(items)
                 if normalized is None:
-                    rospy.logwarn("Invalid K230 special line: %s", line)
+                    if len(items) != 4:
+                        rospy.logwarn("Invalid K230 special field count: %s", line)
+                    else:
+                        rospy.logwarn("Invalid K230 special numeric value: %s", line)
                 else:
                     special_pub.publish(String(data=normalized))
                     rospy.loginfo("Published special target: %s", normalized)
