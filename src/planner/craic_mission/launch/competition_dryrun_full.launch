@@ -5,6 +5,8 @@
   <arg name="start_planner" default="true"/>
   <arg name="use_fake_k230" default="true"/>
   <arg name="use_fake_planner_inputs" default="true"/>
+  <arg name="start_fake_drop_controller" default="true"/>
+  <arg name="fake_drop_ack_delay" default="0.3"/>
 
   <group if="$(arg use_fake_k230)">
     <include file="$(find craic_mission)/launch/fake_k230.launch"/>
@@ -12,6 +14,12 @@
 
   <group if="$(arg use_fake_planner_inputs)">
     <include file="$(find craic_mission)/launch/fake_planner_inputs.launch"/>
+  </group>
+
+  <group if="$(arg start_fake_drop_controller)">
+    <include file="$(find craic_mission)/launch/fake_drop_controller.launch">
+      <arg name="ack_delay" value="$(arg fake_drop_ack_delay)"/>
+    </include>
   </group>
 
   <include file="$(find craic_mission)/launch/competition_all.launch">
