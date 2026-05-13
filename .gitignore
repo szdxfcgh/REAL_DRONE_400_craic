@@ -22,3 +22,21 @@ src/realflight_modules/px4ctrl/data/
 src/Livox-SDK2/
 src/graph/
 k230_files.txt
+# Keil build outputs
+**/Objects/
+**/Listings/
+**/*.uvguix.*
+**/*.uvoptx
+**/*.bak
+**/*.dep
+**/*.crf
+**/*.d
+**/*.o
+**/*.axf
+**/*.hex
+**/*.map
+**/*.lst
+**/*.lnp
+**/*.htm
+**/*.build_log.htm
+**/JLinkLog.txt
