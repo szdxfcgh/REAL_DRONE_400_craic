@@ -141,7 +141,7 @@ class DropControllerSerial:
                 pass
 
     def _write_line(self, line: str) -> bool:
-        payload = ("%s\n" % line).encode("utf-8")
+        payload = ("%s\r\n" % line).encode("utf-8")
         try:
             with self._serial_lock:
                 if self._ser is None or not self._ser.is_open:
