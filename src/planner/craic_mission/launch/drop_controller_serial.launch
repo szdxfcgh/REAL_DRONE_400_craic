@@ -1,0 +1,19 @@
+<launch>
+  <arg name="serial_port" default="/dev/ttyUSB0"/>
+  <arg name="baud_rate" default="115200"/>
+  <arg name="command_timeout" default="2.0"/>
+  <arg name="reconnect_interval" default="2.0"/>
+  <arg name="send_ping_on_connect" default="true"/>
+  <arg name="lock_after_drop" default="false"/>
+  <arg name="lock_delay" default="0.5"/>
+
+  <node pkg="craic_mission" type="drop_controller_serial.py" name="drop_controller_serial" output="screen">
+    <param name="serial_port" value="$(arg serial_port)"/>
+    <param name="baud_rate" value="$(arg baud_rate)" type="int"/>
+    <param name="command_timeout" value="$(arg command_timeout)" type="double"/>
+    <param name="reconnect_interval" value="$(arg reconnect_interval)" type="double"/>
+    <param name="send_ping_on_connect" value="$(arg send_ping_on_connect)" type="bool"/>
+    <param name="lock_after_drop" value="$(arg lock_after_drop)" type="bool"/>
+    <param name="lock_delay" value="$(arg lock_delay)" type="double"/>
+  </node>
+</launch>

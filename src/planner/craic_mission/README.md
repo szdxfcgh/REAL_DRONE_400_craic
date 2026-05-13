@@ -14,6 +14,28 @@ It currently treats K230 vision and the physical drop mechanism as replaceable R
 - Special target marker: `/craic/special_target`, `std_msgs/String`, format `confidence,center_x,center_y`.
 - Landing marker: `/craic/landing_marker`, `std_msgs/String`, format `left_or_right,dx,dy,confidence`.
 - Drop command: `/craic/drop_cmd`, `std_msgs/Int32`, values `1`, `2`, `3`.
+- Drop status: `/craic/drop_status`, `std_msgs/String`, STM32 replies or bridge errors.
+
+## STM32 Drop Controller
+
+The STM32 drop-servo bridge converts `/craic/drop_cmd` values into the STM32 serial protocol:
+
+```text
+1 -> DROP:1
+2 -> DROP:2
+3 -> DROP:3
+```
+
+Run it with the USB serial adapter connected to the STM32:
+
+```bash
+roslaunch craic_mission drop_controller_serial.launch serial_port:=/dev/ttyUSB0 baud_rate:=115200
+rostopic echo /craic/drop_status
+rostopic pub /craic/drop_cmd std_msgs/Int32 "data: 1" -1
+```
+
+Expected status examples include `PONG`, `ACK:DROP:1`, `ACK:LOCK`, `ERR:BUSY`, `ERR:INVALID`, `ERR:TIMEOUT:DROP:1`, and `ERR:SERIAL_WRITE:<error>`.
+Set `lock_after_drop:=true` to send `LOCK` after a successful `ACK:DROP:n`.
 
 ## K230 Serial
 
