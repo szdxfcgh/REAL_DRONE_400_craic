@@ -1,0 +1,11 @@
+<launch>
+  <arg name="ack_delay" default="0.3"/>
+  <arg name="fail_drop_id" default="0"/>
+  <arg name="fail_mode" default="busy"/>
+
+  <node pkg="craic_mission" type="fake_drop_controller.py" name="fake_drop_controller" output="screen">
+    <param name="ack_delay" value="$(arg ack_delay)" type="double"/>
+    <param name="fail_drop_id" value="$(arg fail_drop_id)" type="int"/>
+    <param name="fail_mode" value="$(arg fail_mode)"/>
+  </node>
+</launch>

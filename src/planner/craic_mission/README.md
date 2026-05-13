@@ -16,6 +16,23 @@ It currently treats K230 vision and the physical drop mechanism as replaceable R
 - Drop command: `/craic/drop_cmd`, `std_msgs/Int32`, values `1`, `2`, `3`.
 - Drop status: `/craic/drop_status`, `std_msgs/String`, STM32 replies or bridge errors.
 
+## Competition Runbook
+
+Use [docs/competition_runbook.md](docs/competition_runbook.md) as the competition-day checklist for onboard workspace preparation, K230 serial checks, STM32 drop checks, dry-run validation, guarded real launch, real sensor topic checks, common issues, and safety gates.
+
+Quick competition-day command anchors:
+
+```bash
+source /opt/ros/noetic/setup.bash
+bash scripts/prepare_onboard_workspace.sh
+source devel/setup.bash
+roslaunch craic_mission k230_serial_node.launch serial_port:=/dev/ttyACM0 baud_rate:=115200
+roslaunch craic_mission drop_controller_serial.launch serial_port:=/dev/ttyUSB0 baud_rate:=115200
+roslaunch craic_mission competition_dryrun_full.launch
+rosrun craic_mission check_craic_topics.py
+roslaunch craic_mission competition_real.launch dry_run:=true auto_start:=false
+```
+
 ## STM32 Drop Controller
 
 The STM32 drop-servo bridge converts `/craic/drop_cmd` values into the STM32 serial protocol:

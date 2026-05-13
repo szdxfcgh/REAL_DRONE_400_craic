@@ -17,6 +17,7 @@ catkin_install_python(PROGRAMS
   scripts/mission_fsm_minimal.py
   scripts/drop_controller_mock.py
   scripts/drop_controller_serial.py
+  scripts/fake_drop_controller.py
   scripts/fake_k230_publisher.py
   scripts/fake_odom.py
   scripts/fake_planner_inputs.py
