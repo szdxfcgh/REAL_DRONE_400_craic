@@ -17,12 +17,23 @@ TOPICS = [
     "/craic/qr_result",
     "/craic/target_detected",
     "/craic/ring_pose",
+    "/craic/special_target",
     "/craic/drop_cmd",
+    "/craic/drop_status",
     "/cloud_registered",
     "/camera/depth/image_rect_raw",
     "/vins_fusion/extrinsic",
     "/px4ctrl/takeoff_land",
 ]
+
+EXPECTED_TOPIC_TYPES = {
+    "/craic/drop_status": "std_msgs/String",
+    "/craic/special_target": "std_msgs/String",
+}
+
+WARN_IF_MISSING_TOPICS = {
+    "/craic/drop_status",
+}
 
 
 @dataclass
@@ -53,6 +64,8 @@ class TopicSample:
 class TopicInfo:
     topic: str
     msg_type: str = "unknown"
+    expected_msg_type: Optional[str] = None
+    warn_if_missing: bool = False
     publishers: List[str] = field(default_factory=list)
     subscribers: List[str] = field(default_factory=list)
     sample: TopicSample = field(default_factory=TopicSample)
@@ -60,10 +73,20 @@ class TopicInfo:
     def exists(self) -> bool:
         return bool(self.publishers or self.subscribers or self.msg_type != "unknown")
 
+    def has_type_mismatch(self) -> bool:
+        return self.expected_msg_type is not None and self.msg_type not in (
+            "unknown",
+            self.expected_msg_type,
+        )
+
     def status(self) -> str:
+        if self.has_type_mismatch():
+            return "FAIL"
         if self.publishers or self.sample.received:
             return "OK"
         if self.exists():
+            return "WARN"
+        if self.warn_if_missing:
             return "WARN"
         return "FAIL"
 
@@ -74,7 +97,14 @@ class CraicTopicChecker:
         self.check_hz = bool(rospy.get_param("~check_hz", False))
         self.verbose = bool(rospy.get_param("~verbose", False))
         self.master = rosgraph.Master(rospy.get_name())
-        self.infos: Dict[str, TopicInfo] = {topic: TopicInfo(topic=topic) for topic in TOPICS}
+        self.infos: Dict[str, TopicInfo] = {
+            topic: TopicInfo(
+                topic=topic,
+                expected_msg_type=EXPECTED_TOPIC_TYPES.get(topic),
+                warn_if_missing=topic in WARN_IF_MISSING_TOPICS,
+            )
+            for topic in TOPICS
+        }
         self.subscribers = []
 
     def _refresh_master_state(self) -> None:
