@@ -1,23 +1,40 @@
-#include "stm32f10x.h"                  // Device header
+#include "stm32f10x.h"
 #include "PWM.h"
 
-/**
-  * 函    数：舵机初始化
-  * 参    数：无
-  * 返 回 值：无
-  */
 void Servo_Init(void)
 {
-	PWM_Init();									//初始化舵机的底层PWM
+    PWM_Init();
 }
 
-/**
-  * 函    数：舵机设置角度
-  * 参    数：Angle 要设置的舵机角度，范围：0~180
-  * 返 回 值：无
-  */
-void Servo_SetAngle(float Angle)
+static uint16_t Servo_AngleToCompare(float Angle)
 {
-	PWM_SetCompare2(Angle / 180 * 2000 + 500);	//设置占空比
-												//将角度线性变换，对应到舵机要求的占空比范围上
+    if (Angle < 0)
+    {
+        Angle = 0;
+    }
+    else if (Angle > 180)
+    {
+        Angle = 180;
+    }
+
+    return (uint16_t)(Angle / 180 * 2000 + 500);
+}
+
+void Servo_SetAngle(uint8_t ServoId, float Angle)
+{
+    uint16_t Compare;
+
+    Compare = Servo_AngleToCompare(Angle);
+    if (ServoId == 1)
+    {
+        PWM_SetCompare2(Compare);
+    }
+    else if (ServoId == 2)
+    {
+        PWM_SetCompare3(Compare);
+    }
+    else if (ServoId == 3)
+    {
+        PWM_SetCompare4(Compare);
+    }
 }

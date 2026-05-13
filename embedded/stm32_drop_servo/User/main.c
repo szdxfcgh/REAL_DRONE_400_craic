@@ -1,20 +1,22 @@
-#include "stm32f10x.h"                  // Device header
+#include "stm32f10x.h"
 #include "Delay.h"
 #include "OLED.h"
 #include "Servo.h"
 #include "Key.h"
 #include <string.h>
 
-#define SERVO_LOCK_ANGLE        0
-#define SERVO_DROP1_ANGLE       45
-#define SERVO_DROP2_ANGLE       90
-#define SERVO_DROP3_ANGLE       135
+#define SERVO1_LOCK_ANGLE       0
+#define SERVO1_OPEN_ANGLE       90
+#define SERVO2_LOCK_ANGLE       0
+#define SERVO2_OPEN_ANGLE       90
+#define SERVO3_LOCK_ANGLE       0
+#define SERVO3_OPEN_ANGLE       90
+#define SERVO_OPEN_HOLD_MS      700
 
-#define SERVO_ACTION_DELAY_MS   700
 #define SERIAL_RX_BUF_SIZE      32
 
 uint8_t KeyNum;
-float Angle = SERVO_LOCK_ANGLE;
+float Angle = SERVO1_LOCK_ANGLE;
 
 static char Serial_RxBuffer[SERIAL_RX_BUF_SIZE];
 static uint8_t Serial_RxIndex;
@@ -26,7 +28,8 @@ static void Serial_SendString(const char *String);
 static uint8_t Serial_IsServoCommand(const char *Command);
 static void Serial_ProcessRx(void);
 static void Serial_HandleCommand(const char *Command);
-static void Servo_DoAction(float TargetAngle, const char *AckString);
+static void Servo_LockAll(void);
+static void Servo_DoDrop(uint8_t ServoId, float OpenAngle, float LockAngle, const char *AckString);
 static void Servo_ActionDelay(uint16_t DelayMs);
 
 static void Serial_Init(void)
@@ -135,19 +138,22 @@ static void Serial_HandleCommand(const char *Command)
     }
     else if (strcmp(Command, "DROP:1") == 0)
     {
-        Servo_DoAction(SERVO_DROP1_ANGLE, "ACK:DROP:1");
+        Servo_DoDrop(1, SERVO1_OPEN_ANGLE, SERVO1_LOCK_ANGLE, "ACK:DROP:1");
     }
     else if (strcmp(Command, "DROP:2") == 0)
     {
-        Servo_DoAction(SERVO_DROP2_ANGLE, "ACK:DROP:2");
+        Servo_DoDrop(2, SERVO2_OPEN_ANGLE, SERVO2_LOCK_ANGLE, "ACK:DROP:2");
     }
     else if (strcmp(Command, "DROP:3") == 0)
     {
-        Servo_DoAction(SERVO_DROP3_ANGLE, "ACK:DROP:3");
+        Servo_DoDrop(3, SERVO3_OPEN_ANGLE, SERVO3_LOCK_ANGLE, "ACK:DROP:3");
     }
     else if (strcmp(Command, "LOCK") == 0)
     {
-        Servo_DoAction(SERVO_LOCK_ANGLE, "ACK:LOCK");
+        ServoBusy = 1;
+        Servo_LockAll();
+        ServoBusy = 0;
+        Serial_SendString("ACK:LOCK");
     }
     else
     {
@@ -155,13 +161,24 @@ static void Serial_HandleCommand(const char *Command)
     }
 }
 
-static void Servo_DoAction(float TargetAngle, const char *AckString)
+static void Servo_LockAll(void)
+{
+    Servo_SetAngle(1, SERVO1_LOCK_ANGLE);
+    Servo_SetAngle(2, SERVO2_LOCK_ANGLE);
+    Servo_SetAngle(3, SERVO3_LOCK_ANGLE);
+    OLED_ShowString(1, 1, "LOCK      ");
+}
+
+static void Servo_DoDrop(uint8_t ServoId, float OpenAngle, float LockAngle, const char *AckString)
 {
     ServoBusy = 1;
-    Angle = TargetAngle;
-    Servo_SetAngle(TargetAngle);
-    OLED_ShowNum(1, 7, (uint32_t)Angle, 3);
-    Servo_ActionDelay(SERVO_ACTION_DELAY_MS);
+    Angle = OpenAngle;
+    Servo_SetAngle(ServoId, OpenAngle);
+    OLED_ShowString(1, 1, "DROP:");
+    OLED_ShowNum(1, 6, ServoId, 1);
+    Servo_ActionDelay(SERVO_OPEN_HOLD_MS);
+    Angle = LockAngle;
+    Servo_SetAngle(ServoId, LockAngle);
     ServoBusy = 0;
     Serial_SendString(AckString);
 }
@@ -190,12 +207,11 @@ int main(void)
     Key_Init();
     Serial_Init();
 
-    Angle = SERVO_LOCK_ANGLE;
-    Servo_SetAngle(Angle);
+    Angle = SERVO1_LOCK_ANGLE;
+    Servo_LockAll();
 
-    OLED_ShowString(1, 1, "Angle:");
+    OLED_ShowString(1, 1, "LOCK");
     OLED_ShowString(2, 1, "UART 115200");
-    OLED_ShowNum(1, 7, (uint32_t)Angle, 3);
 
     while (1)
     {
@@ -210,8 +226,9 @@ int main(void)
                 Angle = 0;
             }
 
-            Servo_SetAngle(Angle);
-            OLED_ShowNum(1, 7, (uint32_t)Angle, 3);
+            Servo_SetAngle(1, Angle);
+            OLED_ShowString(1, 1, "S1:");
+            OLED_ShowNum(1, 4, (uint32_t)Angle, 3);
         }
     }
 }
