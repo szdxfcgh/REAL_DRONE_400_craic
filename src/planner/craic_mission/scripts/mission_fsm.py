@@ -32,6 +32,9 @@ class CraicMissionFSM:
         self.goal_tolerance_z = float(rospy.get_param("~mission/goal_tolerance_z", 0.25))
         self.goal_timeout = float(rospy.get_param("~mission/goal_timeout", 35.0))
         self.drop_settle_time = float(rospy.get_param("~mission/drop_settle_time", 1.5))
+        self.wait_drop_ack = bool(rospy.get_param("~mission/wait_drop_ack", True))
+        self.drop_ack_timeout = float(rospy.get_param("~mission/drop_ack_timeout", 3.0))
+        self.allow_continue_on_drop_timeout = bool(rospy.get_param("~mission/allow_continue_on_drop_timeout", True))
         self.target_confirm_timeout = float(rospy.get_param("~mission/target_confirm_timeout", 4.0))
         self.target_min_confidence = float(rospy.get_param("~mission/target_min_confidence", 0.50))
         self.takeoff_wait_timeout = float(rospy.get_param("~mission/takeoff_wait_timeout", 20.0))
@@ -58,9 +61,11 @@ class CraicMissionFSM:
         self.safety_reason: Optional[str] = None
         self.latest_qr: Optional[str] = None
         self.latest_target: Optional[Tuple[str, float, float, float, rospy.Time]] = None
+        self.latest_drop_status: Optional[Tuple[str, rospy.Time]] = None
         self.latest_ring_pose: Optional[PoseStamped] = None
         self.started = threading.Event()
         self.target_lock = threading.Lock()
+        self.drop_status_lock = threading.Lock()
 
         self.goal_pub = rospy.Publisher(self.goal_topic, PoseStamped, queue_size=1)
         self.takeoff_land_pub = rospy.Publisher(self.takeoff_land_topic, TakeoffLand, queue_size=1)
@@ -71,6 +76,7 @@ class CraicMissionFSM:
         rospy.Subscriber(self.odom_topic, Odometry, self._odom_cb, queue_size=1)
         rospy.Subscriber(self.qr_result_topic, String, self._qr_cb, queue_size=1)
         rospy.Subscriber(self.target_detected_topic, String, self._target_cb, queue_size=5)
+        rospy.Subscriber("/craic/drop_status", String, self._drop_status_cb, queue_size=10)
         rospy.Subscriber(self.ring_pose_topic, PoseStamped, self._ring_cb, queue_size=1)
         rospy.Subscriber("~start", Empty, self._start_cb, queue_size=1)
 
@@ -110,6 +116,15 @@ class CraicMissionFSM:
             return
         with self.target_lock:
             self.latest_target = parsed[0], parsed[1], parsed[2], parsed[3], rospy.Time.now()
+
+    def _drop_status_cb(self, msg: String) -> None:
+        status = msg.data.strip()
+        with self.drop_status_lock:
+            self.latest_drop_status = status, rospy.Time.now()
+
+        status_upper = status.upper()
+        if status_upper in ("ERR:BUSY", "ERR:INVALID") or status_upper.startswith("ERR:TIMEOUT:DROP:"):
+            rospy.logwarn("[CRAIC mission] drop controller status: %s", status)
 
     def _ring_cb(self, msg: PoseStamped) -> None:
         self.latest_ring_pose = msg
@@ -278,14 +293,54 @@ class CraicMissionFSM:
             return False
         self._set_state("DROP_" + label)
         rospy.logwarn("[CRAIC mission] drop %d at %s", drop_id, label)
-        self.drop_pub.publish(Int32(data=drop_id))
         start = rospy.Time.now()
+        with self.drop_status_lock:
+            self.latest_drop_status = None
+        self.drop_pub.publish(Int32(data=drop_id))
+
+        if self.wait_drop_ack and not self.dry_run:
+            return self._wait_for_drop_ack(drop_id, start)
+
         rate = rospy.Rate(10)
         while not rospy.is_shutdown() and (rospy.Time.now() - start).to_sec() < self.drop_settle_time:
             if not self._check_safety():
                 return False
             rate.sleep()
         return not rospy.is_shutdown()
+
+    def _wait_for_drop_ack(self, drop_id: int, start: rospy.Time) -> bool:
+        expected = "ACK:DROP:%d" % drop_id
+        rate = rospy.Rate(20)
+
+        while not rospy.is_shutdown():
+            if not self._check_safety():
+                return False
+
+            with self.drop_status_lock:
+                status = self.latest_drop_status
+
+            if status is not None and status[1] >= start:
+                status_text = status[0].upper()
+                if status_text == expected:
+                    rospy.logwarn("[CRAIC mission] drop %d acknowledged: %s", drop_id, status[0])
+                    return True
+
+            elapsed = (rospy.Time.now() - start).to_sec()
+            if elapsed > self.drop_ack_timeout:
+                rospy.logwarn(
+                    "[CRAIC mission] drop %d ACK timeout after %.1fs waiting for %s",
+                    drop_id,
+                    elapsed,
+                    expected,
+                )
+                if self.allow_continue_on_drop_timeout:
+                    return True
+                self._trip_safety("DROP_ACK_TIMEOUT %d" % drop_id)
+                return False
+
+            rate.sleep()
+
+        return False
 
     def _wait_for_target_confirm(self, expected_class: str, label: str) -> bool:
         expected = expected_class.strip().lower()
