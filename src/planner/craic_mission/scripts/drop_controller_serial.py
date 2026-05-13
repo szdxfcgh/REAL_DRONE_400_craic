@@ -189,7 +189,7 @@ class DropControllerSerial:
         if not rospy.is_shutdown() and not self._stop_event.is_set():
             self._write_line("LOCK")
 
-    def _check_timeout(self, _event: rospy.TimerEvent) -> None:
+    def _check_timeout(self, _event) -> None:
         now = time.monotonic()
         timed_out_drop = None
 
