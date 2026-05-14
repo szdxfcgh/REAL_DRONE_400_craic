@@ -5,6 +5,9 @@
   <arg name="start_planner" default="true"/>
   <arg name="start_safety_monitor" default="true"/>
   <arg name="enable_safety_auto_land" default="false"/>
+  <arg name="start_drop_controller" default="false"/>
+  <arg name="drop_serial_port" default="/dev/ttyUSB0"/>
+  <arg name="drop_baud_rate" default="115200"/>
 
   <include file="$(find craic_mission)/launch/competition_all.launch">
     <arg name="dry_run" value="$(arg dry_run)"/>
@@ -14,4 +17,11 @@
     <arg name="start_safety_monitor" value="$(arg start_safety_monitor)"/>
     <arg name="enable_safety_auto_land" value="$(arg enable_safety_auto_land)"/>
   </include>
+
+  <group if="$(arg start_drop_controller)">
+    <include file="$(find craic_mission)/launch/drop_controller_serial.launch">
+      <arg name="serial_port" value="$(arg drop_serial_port)"/>
+      <arg name="baud_rate" value="$(arg drop_baud_rate)"/>
+    </include>
+  </group>
 </launch>

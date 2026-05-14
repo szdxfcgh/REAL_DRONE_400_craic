@@ -54,6 +54,20 @@ rostopic pub /craic/drop_cmd std_msgs/Int32 "data: 1" -1
 Expected status examples include `PONG`, `ACK:DROP:1`, `ACK:LOCK`, `ERR:BUSY`, `ERR:INVALID`, `ERR:TIMEOUT:DROP:1`, and `ERR:SERIAL_WRITE:<error>`.
 Set `lock_after_drop:=true` to send `LOCK` after a successful `ACK:DROP:n`.
 
+Quick full-chain sequence test:
+
+```bash
+rosrun craic_mission test_drop_sequence.py
+```
+
+The helper publishes `/craic/drop_cmd` with `data=1`, `data=2`, and `data=3`, then waits for `ACK:DROP:1`, `ACK:DROP:2`, and `ACK:DROP:3` on `/craic/drop_status`. It exits non-zero if any ACK is not received before `~timeout` seconds.
+
+Optional parameters:
+
+```bash
+rosrun craic_mission test_drop_sequence.py _drop_ids:="[1,2,3]" _interval:=1.0 _timeout:=3.0
+```
+
 ## K230 Serial
 
 The preferred K230 integration is the in-package serial node `k230_serial_node.py`.
@@ -202,8 +216,7 @@ Dry-run drop ACK checks:
 
 ```bash
 roslaunch craic_mission competition_dryrun_full.launch fake_drop_ack_delay:=0.3
-rostopic echo /craic/drop_status
-rostopic echo /craic/drop_cmd
+rosrun craic_mission test_drop_sequence.py
 ```
 
 Disable the fake drop controller when connecting the real STM32 bridge:

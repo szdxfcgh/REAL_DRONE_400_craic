@@ -76,7 +76,21 @@ roslaunch craic_mission drop_controller_serial.launch serial_port:=/dev/ttyUSB0 
 rostopic echo /craic/drop_status
 ```
 
-先进行舵机空载测试：
+先进行舵机空载链路测试：
+
+```bash
+rosrun craic_mission test_drop_sequence.py
+```
+
+该脚本会依次发布 `/craic/drop_cmd` 的 `data=1`、`data=2`、`data=3`，并等待 `/craic/drop_status` 返回 `ACK:DROP:1`、`ACK:DROP:2`、`ACK:DROP:3`。正常日志应包含 `sent DROP:1`、`got ACK:DROP:1` 等信息；如果任意 ACK 超过默认 3 秒未收到，脚本会以非 0 退出码结束。
+
+需要调整间隔或超时时可执行：
+
+```bash
+rosrun craic_mission test_drop_sequence.py _drop_ids:="[1,2,3]" _interval:=1.0 _timeout:=3.0
+```
+
+手动兜底命令：
 
 ```bash
 rostopic pub /craic/drop_cmd std_msgs/Int32 "data: 1" -1
@@ -169,7 +183,7 @@ rostopic pub /craic_mission_fsm/start std_msgs/Empty "{}" -1
 1. 拆桨，物块先不装到舵机上。
 2. 机载电脑执行 `source /opt/ros/noetic/setup.bash`、`bash scripts/prepare_onboard_workspace.sh`、`source devel/setup.bash`。
 3. K230 连接 `/dev/ttyACM0`，启动 `k230_serial_node.launch`，确认 `/craic/qr_result`、`/craic/target_detected`、`/craic/landing_marker`、`/craic/special_target`。
-4. STM32 执行 `ls /dev/ttyUSB*`，必要时 `chmod`，启动 `drop_controller_serial.launch`，监听 `/craic/drop_status`，发布 `/craic/drop_cmd` 的 `data: 1/2/3`。
+4. STM32 执行 `ls /dev/ttyUSB*`，必要时 `chmod`，启动 `drop_controller_serial.launch`，监听 `/craic/drop_status`，运行 `test_drop_sequence.py` 确认 `data: 1/2/3` 都收到 ACK。
 5. 检查真实传感器 topic：`/Odom_high_freq`、`/cloud_registered`、`/position_cmd`、`/px4ctrl/takeoff_land`。
 6. 启动 `competition_dryrun_full.launch`，运行 `check_craic_topics.py`，发布 start topic。
 7. 无桨启动 `competition_real.launch dry_run:=true auto_start:=false`。
