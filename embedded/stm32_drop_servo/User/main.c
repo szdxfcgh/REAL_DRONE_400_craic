@@ -6,11 +6,11 @@
 #include <string.h>
 
 #define SERVO1_LOCK_ANGLE       0
-#define SERVO1_OPEN_ANGLE       90
+#define SERVO1_OPEN_ANGLE       180
 #define SERVO2_LOCK_ANGLE       0
-#define SERVO2_OPEN_ANGLE       90
+#define SERVO2_OPEN_ANGLE       120
 #define SERVO3_LOCK_ANGLE       0
-#define SERVO3_OPEN_ANGLE       90
+#define SERVO3_OPEN_ANGLE       60
 #define SERVO_OPEN_HOLD_MS      700
 
 #define SERIAL_RX_BUF_SIZE      32
